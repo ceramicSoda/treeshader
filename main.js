@@ -39,7 +39,7 @@ loader.loadAsync("assets/tree_flat.glb")
   tree.bbox = new THREE.Box3().setFromObject(tree.crown);
   leavesMat.uniforms.uBoxMin.value.copy(tree.bbox.min); 
   leavesMat.uniforms.uBoxSize.value.copy(tree.bbox.getSize(new THREE.Vector3())); 
-  
+
   tree.leavesCount = tree.crown.geometry.attributes.position.count;
   tree.leafGeometry = obj.scene.getObjectByName("Leaf").geometry; 
   tree.leaves = new THREE.InstancedMesh(tree.leafGeometry, leavesMat, tree.leavesCount); 
@@ -70,6 +70,7 @@ controls.target = new THREE.Vector3(0,2.4,0);
 scene.add(dlight01, tree.group);
 // MAIN LOOP
 function animate () {
+  leavesMat.uniforms.uTime.value += 0.1; 
   controls.update(); 
   renderer.render(scene, camera); 
 }
