@@ -18,34 +18,48 @@ const leavesMat = new THREE.ShaderMaterial({
   side: THREE.DoubleSide,
   uniforms: {
     ...THREE.UniformsLib.lights,
-    uColor: {value: new THREE.Color(0xDA9030)},
+    uColor: {value: new THREE.Color(0xe5752b)},
   },
   vertexShader: leavesVS,
   fragmentShader: leavesFS,
 })
 //-----------------------------GLTF
-loader.loadAsync("assets/tree.glb")
+loader.loadAsync("assets/tree_new.glb")
 .catch(err => console.error(err))
 .then(obj => {
   tree.pole = obj.scene.getObjectByName("Pole");
-  tree.leaves = obj.scene.getObjectByName("Leaves");
-  tree.leavesCount = tree.leaves.geometry.attributes.position.count;
-  tree.leaf = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.1, 0.2,1,1), new THREE.MeshBasicMaterial({color: 0xDA9030, side: THREE.DoubleSide}), tree.leavesCount); 
+  tree.pole.material = new THREE.MeshBasicMaterial({color: 0xc4a5b4});
+  tree.crown = obj.scene.getObjectByName("Leaves");
+  tree.leavesCount = tree.crown.geometry.attributes.position.count;
+  tree.leafGeometry = obj.scene.getObjectByName("Leaf").geometry; 
+  console.log(tree.leavesCount);
+  //tree.leaves = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.1, 0.15,4,4), new THREE.MeshPhongMaterial({color: 0xF4CF74}), tree.leavesCount); 
+  tree.leaves = new THREE.InstancedMesh(tree.leafGeometry, 
+                                        //new THREE.MeshBasicMaterial({color: 0xe5752b, side: THREE.DoubleSide}), 
+                                        leavesMat,
+                                        tree.leavesCount); 
   const dummy = new THREE.Object3D();
-  console.log(tree.leaves.geometry.attributes.normal);
   for (let i = 0; i < tree.leavesCount; i++) { 
-    dummy.position.x = tree.leaves.geometry.attributes.position.array[i*3];
-    dummy.position.y = tree.leaves.geometry.attributes.position.array[i*3+1];
-    dummy.position.z = tree.leaves.geometry.attributes.position.array[i*3+2];
-    dummy.lookAt(dummy.position.x + tree.leaves.geometry.attributes.normal.array[i*3],
-                 dummy.position.y + tree.leaves.geometry.attributes.normal.array[i*3+1],
-                 dummy.position.z + tree.leaves.geometry.attributes.normal.array[i*3+2])
-    dummy.updateMatrix();
-    tree.leaf.setMatrixAt(i, dummy.matrix);
-  }
-  tree.group.add(tree.pole, tree.leaf);
-})
+    dummy.position.x = tree.crown.geometry.attributes.position.array[i*3];
+    dummy.position.y = tree.crown.geometry.attributes.position.array[i*3+1];
+    dummy.position.z = tree.crown.geometry.attributes.position.array[i*3+2];
+    
+    dummy.rotation.x = Math.random() * 0.1;
+    dummy.rotation.y = Math.random() * 0.1;
+    dummy.rotation.z = Math.random() * 0.1;
 
+    dummy.lookAt(dummy.position.x + tree.crown.geometry.attributes.normal.array[i*3],
+                 dummy.position.y + tree.crown.geometry.attributes.normal.array[i*3+1],
+                 dummy.position.z + tree.crown.geometry.attributes.normal.array[i*3+2]);
+    dummy.scale.x = (Math.random() * 0.4 + 0.6);
+    dummy.scale.y = (Math.random() * 0.4 + 0.6);
+    dummy.scale.z = (Math.random() * 0.4 + 0.6);
+    dummy.updateMatrix();
+    tree.leaves.setMatrixAt(i, dummy.matrix);
+    //tree.leaves.setColorAt(i, new THREE.Color(Math.random() * 0xffffff));
+  }
+  tree.group.add(tree.pole, tree.leaves);
+})
 //-----------------------------INIT
 document.body.appendChild(renderer.domElement); 
 renderer.setAnimationLoop(animate);
