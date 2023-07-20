@@ -9,7 +9,7 @@ export const leavesVS = /*glsl*/`
         vNormal = normalMatrix * mat3(instanceMatrix) * normalize(normal); 
         gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.);
         vWorldPos = vec3(modelMatrix * instanceMatrix * vec4(position, 1.));
-        vObjectPos = (vWorldPos - uBoxMin) / uBoxSize; 
+        vObjectPos = -((vWorldPos - uBoxMin) * 2.) / uBoxSize - vec3(1.0); 
         vViewPosition = -normalize((modelViewMatrix * vec4(position, 1.)).xyz);
     }
 `
@@ -24,7 +24,7 @@ export const leavesFS = /*glsl*/`
     uniform float   uState; 
 
     vec3 getPosColors(){
-        vec3 p = vec3(pow((1. - vNormal.y - 0.4), 4.)) * uColor;
+        vec3 p = vec3(pow((1. - vNormal.y - 0.4), 4.)) * uColor * vObjectPos;
         return p;
     }
 
@@ -45,6 +45,5 @@ export const leavesFS = /*glsl*/`
         c = vec4(c.xyz + getDiffuse(), c.w);
         c = vec4(c.xyz + getPosColors(), c.w);
         gl_FragColor = vec4( pow(c.xyz,vec3(0.454545)), c.w );
-        gl_FragColor = vec4(vObjectPos * vNormal, 1.);
     }
 `
