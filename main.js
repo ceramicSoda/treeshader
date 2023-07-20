@@ -18,6 +18,9 @@ const leavesMat = new THREE.ShaderMaterial({
   side: THREE.DoubleSide,
   uniforms: {
     ...THREE.UniformsLib.lights,
+    uTime: {value: 0.},
+    uBoxMin: {value: new THREE.Vector3(0,0,0)},
+    uBoxMax: {value: new THREE.Vector3(0,0,0)},
     uColor: {value: new THREE.Color(0xe5752b)},
   },
   vertexShader: leavesVS,
@@ -33,9 +36,7 @@ loader.loadAsync("assets/tree_new.glb")
   tree.leavesCount = tree.crown.geometry.attributes.position.count;
   tree.leafGeometry = obj.scene.getObjectByName("Leaf").geometry; 
   console.log(tree.leavesCount);
-  //tree.leaves = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.1, 0.15,4,4), new THREE.MeshPhongMaterial({color: 0xF4CF74}), tree.leavesCount); 
   tree.leaves = new THREE.InstancedMesh(tree.leafGeometry, 
-                                        //new THREE.MeshBasicMaterial({color: 0xe5752b, side: THREE.DoubleSide}), 
                                         leavesMat,
                                         tree.leavesCount); 
   const dummy = new THREE.Object3D();
@@ -56,7 +57,6 @@ loader.loadAsync("assets/tree_new.glb")
     dummy.scale.z = (Math.random() * 0.4 + 0.6);
     dummy.updateMatrix();
     tree.leaves.setMatrixAt(i, dummy.matrix);
-    //tree.leaves.setColorAt(i, new THREE.Color(Math.random() * 0xffffff));
   }
   tree.group.add(tree.pole, tree.leaves);
 })
@@ -66,8 +66,8 @@ renderer.setAnimationLoop(animate);
 renderer.setSize(window.innerWidth, window.innerHeight);
 dlight01.position.set(4,2,0);
 dlight01.lookAt(0,0,0);
-camera.position.set(12,8,0);
-controls.target = new THREE.Vector3(0,2,0);
+camera.position.set(12,4,0);
+controls.target = new THREE.Vector3(0,2.4,0);
 scene.add(dlight01, tree.group);
 //-----------------------------LOOP
 function animate () {
