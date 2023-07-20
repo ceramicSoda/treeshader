@@ -27,7 +27,7 @@ const leavesMat = new THREE.ShaderMaterial({
   fragmentShader: leavesFS,
 })
 //-----------------------------GLTF
-loader.loadAsync("assets/tree_new.glb")
+loader.loadAsync("assets/tree_flat.glb")
 .catch(err => console.error(err))
 .then(obj => {
   tree.pole = obj.scene.getObjectByName("Pole");
