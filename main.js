@@ -12,6 +12,7 @@ const renderer = new THREE.WebGLRenderer({alpha: true});
 const controls = new OrbitControls(camera, renderer.domElement);
 const dlight01 = new THREE.DirectionalLight(0xcccccc, 0.8);
 const tree = {group: new THREE.Group()};
+const noiseMap = new THREE.TextureLoader().load('assets/noise.png');
 // MATERIALS
 const leavesMat = new THREE.ShaderMaterial({
   lights: true,
@@ -22,6 +23,7 @@ const leavesMat = new THREE.ShaderMaterial({
     uColor: {value: new THREE.Color(0xe5752b)},
     uBoxMin: {value: new THREE.Vector3(0,0,0)},
     uBoxSize: {value: new THREE.Vector3(10,10,10)},
+    uNoiseMap: {value: noiseMap},
   },
   vertexShader: leavesVS,
   fragmentShader: leavesFS,
@@ -68,9 +70,11 @@ dlight01.lookAt(0,2.4,0);
 camera.position.set(12,4,0);
 controls.target = new THREE.Vector3(0,2.4,0);
 scene.add(dlight01, tree.group);
+noiseMap.wrapS = THREE.RepeatWrapping;
+noiseMap.wrapT = THREE.RepeatWrapping;
 // MAIN LOOP
 function animate () {
-  leavesMat.uniforms.uTime.value += 0.1; 
+  leavesMat.uniforms.uTime.value += 0.01; 
   controls.update(); 
   renderer.render(scene, camera); 
 }

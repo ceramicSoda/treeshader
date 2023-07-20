@@ -2,23 +2,31 @@ export const leavesVS = /*glsl*/`
     uniform vec3 uBoxMin;
     uniform vec3 uBoxSize;
     uniform float uTime;
+    uniform sampler2D uNoiseMap;
     varying vec3 vWorldPos; 
     varying vec3 vObjectPos; 
     varying vec3 vNormal; 
     varying vec3 vViewPosition;
     
-    vec3 getWind(){
-            
+    vec4 getTriplanar(sampler2D tex){
+        vec4 xPixel = texture(tex, (vObjectPos.xy + uTime) / 3.);
+        vec4 yPixel = texture(tex, (vObjectPos.yz + uTime) / 3.);
+        vec4 zPixel = texture(tex, (vObjectPos.xz + uTime) / 3.);
+        vec4 combined = (xPixel + yPixel + zPixel) / 3.0;
+        combined.xyz = combined.xyz * vObjectPos; 
+        return combined;
     }
     
     void main(){
         vNormal = normalMatrix * mat3(instanceMatrix) * normalize(normal); 
-        gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.);
         vWorldPos = vec3(modelMatrix * instanceMatrix * vec4(position, 1.));
         vObjectPos = ((vWorldPos - uBoxMin) * 2.) / uBoxSize - vec3(1.0); 
         vViewPosition = -normalize((modelViewMatrix * vec4(position, 1.)).xyz);
-        //gl_Position.y = (vObjectPos.x * sin(uTime + vObjectPos.z)) / 5. + gl_Position.y; 
-        gl_Position.y = (vObjectPos.x * sin(uTime + vObjectPos.z)) / 5. + gl_Position.y; 
+        vec4 noiseOffset = getTriplanar(uNoiseMap); 
+        vec4 newPos = instanceMatrix * vec4(position, 1.); 
+        newPos.xyz = newPos.xyz + noiseOffset.xyz;
+        gl_Position =  projectionMatrix * modelViewMatrix * newPos;
+        //gl_Position =  projectionMatrix * modelViewMatrix * instanceMatrix * vec4(newPos, 1.);
     }
 `
 export const leavesFS = /*glsl*/`
@@ -29,6 +37,7 @@ export const leavesFS = /*glsl*/`
     varying vec3 vNormal; 
     varying vec3 vViewPosition;
     uniform vec3 uColor;
+    uniform float uTime;
 
     vec3 getPosColors(){
         vec3 p = vec3(pow((1. - vNormal.y - 0.4), 4.)) * uColor * vObjectPos;
@@ -51,7 +60,7 @@ export const leavesFS = /*glsl*/`
         vec4 c = vec4(uColor, 1.0);
         c = vec4(c.xyz + getDiffuse(), c.w);
         //c = vec4(c.xyz + getPosColors(), c.w);
-        gl_FragColor = vec4( pow(c.xyz,vec3(0.454545)), c.w );
+        //gl_FragColor = vec4( pow(c.xyz,vec3(0.454545)), c.w );
         gl_FragColor = vec4( vObjectPos.xyz , 1.0 );
     }
 `
