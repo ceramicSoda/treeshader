@@ -1,6 +1,8 @@
 body, html{
   background-color: white;
-  background-color: #584b5f;
+  background-color: #52598f;
+  /*background: linear-gradient(#7081b9, #4d2b3d);*/
+  background: linear-gradient(#505d94, #4e3752);
   margin: 0;
   padding: 0;
   height: 100%;

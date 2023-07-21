@@ -13,7 +13,7 @@ export const leavesVS = /*glsl*/`
         vec4 xPixel = texture(tex, (vObjectPos.xy + uTime) / 4.);
         vec4 yPixel = texture(tex, (vObjectPos.yz + uTime) / 4.);
         vec4 zPixel = texture(tex, (vObjectPos.xz + uTime) / 4.);
-        vec4 combined = (xPixel + yPixel + zPixel) / 12.0;
+        vec4 combined = (xPixel + yPixel + zPixel) / 6.0;
         combined.xyz = combined.xyz * vObjectPos; 
         return combined;
     }
@@ -28,7 +28,6 @@ export const leavesVS = /*glsl*/`
         vec4 newPos = instanceMatrix * vec4(position, 1.); 
         newPos.xyz = newPos.xyz + noiseOffset.xyz;
         gl_Position =  projectionMatrix * modelViewMatrix * newPos;
-        //gl_Position =  projectionMatrix * modelViewMatrix * instanceMatrix * vec4(newPos, 1.);
     }
 `
 export const leavesFS = /*glsl*/`
@@ -41,12 +40,18 @@ export const leavesFS = /*glsl*/`
     varying vec3 vWorldNormal; 
     uniform vec3 uColorA;
     uniform vec3 uColorB;
+    uniform vec3 uColorC;
     uniform float uTime;
     
+    vec3 mix3 (vec3 v1, vec3 v2, vec3 v3, float fa){
+        vec3 tmp = mix(v2, v1, fa);
+        return (mix(tmp, v3, fa));
+    }
+
     float getPosColors(){
         float p = 0.;
         p = smoothstep(0.2, 0.8, distance(vec3(0.), vObjectPos));
-        p = p *  (-(vWorldNormal.g / 2.) + 0.5) * (- vObjectPos.y / 2. + 0.5); 
+        p = p * (-(vWorldNormal.g / 2.) + 0.5) * (- vObjectPos.y / 9. + 0.5); 
         return p;
     }
 
@@ -62,17 +67,15 @@ export const leavesFS = /*glsl*/`
         float intensity;
         for (int i = 0; i < directionalLights.length(); i++){
             intensity = dot(directionalLights[i].direction, vNormal);
-            intensity = pow(smoothstep(0.75, 1., intensity), 0.2);
+            intensity = smoothstep(0.65, 1., intensity) * 0.2 
+                        + pow(smoothstep(0.65, 1., intensity), 0.5);
         }
         return intensity;
     }
 
     void main(){
-        //vec4 c = vec4(uColor, 1.0);
-        //c = vec4(vec3(getPosColors() + getFakeSSS()), c.w);
-        //c = c + vec4(vec3(getDiffuse()), c.w);
-        float gradMap = getPosColors() + getFakeSSS() + getDiffuse();
-        vec4 c = vec4(mix(uColorA, uColorB, gradMap), 1.0);
+        float gradMap = clamp(1., 0., getPosColors() + getFakeSSS() + getDiffuse());
+        vec4 c = vec4(mix3(uColorA, uColorB, uColorC, gradMap), 1.0);
         gl_FragColor = vec4( pow(c.xyz,vec3(0.454545)), c.w );
     }
 `
