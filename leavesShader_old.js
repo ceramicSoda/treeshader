@@ -39,40 +39,30 @@ export const leavesFS = /*glsl*/`
     varying vec3 vNormal; 
     varying vec3 vViewPosition;
     varying vec3 vWorldNormal; 
-    uniform vec3 uColorA;
-    uniform vec3 uColorB;
+    uniform vec3 uColor;
     uniform float uTime;
     
-    float getPosColors(){
-        float p = 0.;
-        p = smoothstep(0.2, 0.8, distance(vec3(0.), vObjectPos));
-        p = p *  (-(vWorldNormal.g / 2.) + 0.5) * (- vObjectPos.y / 2. + 0.5); 
+    vec3 getPosColors(){
+        vec3 p = vec3(0.,0.,0.);
+        p = vec3(smoothstep(0.2, 4.,vWorldNormal.g)) * vec3(-1., -0.5, -0.3);
         return p;
     }
 
-    float getFakeSSS(){
-        float sss = 0.;
-        for (int i = 0; i < directionalLights.length(); i++){
-            vec3 l = (directionalLights[i].direction + normalize(-vViewPosition)); 
-            sss = pow(dot(vNormal, l), 2.) / 6.;
-        }
-        return sss; 
-    }
-    float getDiffuse(){
+    vec3 getDiffuse(){
+        vec3 l;
         float intensity;
         for (int i = 0; i < directionalLights.length(); i++){
             intensity = dot(directionalLights[i].direction, vNormal);
             intensity = pow(smoothstep(0.75, 1., intensity), 0.2);
+            l = l + intensity * (uColor * directionalLights[i].color) / 2.; 
         }
-        return intensity;
+        return l;
     }
 
     void main(){
-        //vec4 c = vec4(uColor, 1.0);
-        //c = vec4(vec3(getPosColors() + getFakeSSS()), c.w);
-        //c = c + vec4(vec3(getDiffuse()), c.w);
-        float gradMap = getPosColors() + getFakeSSS() + getDiffuse();
-        vec4 c = vec4(mix(uColorA, uColorB, gradMap), 1.0);
+        vec4 c = vec4(uColor, 1.0);
+        c = vec4(uColor + getDiffuse(), c.w);
+        c = vec4(c.xyz + getPosColors(), c.w);
         gl_FragColor = vec4( pow(c.xyz,vec3(0.454545)), c.w );
     }
 `
