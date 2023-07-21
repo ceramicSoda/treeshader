@@ -9,10 +9,10 @@ export const leavesVS = /*glsl*/`
     varying vec3 vViewPosition;
     
     vec4 getTriplanar(sampler2D tex){
-        vec4 xPixel = texture(tex, (vObjectPos.xy + uTime) / 3.);
-        vec4 yPixel = texture(tex, (vObjectPos.yz + uTime) / 3.);
-        vec4 zPixel = texture(tex, (vObjectPos.xz + uTime) / 3.);
-        vec4 combined = (xPixel + yPixel + zPixel) / 3.0;
+        vec4 xPixel = texture(tex, (vObjectPos.xy + uTime) / 4.);
+        vec4 yPixel = texture(tex, (vObjectPos.yz + uTime) / 4.);
+        vec4 zPixel = texture(tex, (vObjectPos.xz + uTime) / 4.);
+        vec4 combined = (xPixel + yPixel + zPixel) / 12.0;
         combined.xyz = combined.xyz * vObjectPos; 
         return combined;
     }
@@ -38,7 +38,7 @@ export const leavesFS = /*glsl*/`
     varying vec3 vViewPosition;
     uniform vec3 uColor;
     uniform float uTime;
-
+    
     vec3 getPosColors(){
         vec3 p = vec3(pow((1. - vNormal.y - 0.4), 4.)) * uColor * vObjectPos;
         return p;
@@ -60,7 +60,6 @@ export const leavesFS = /*glsl*/`
         vec4 c = vec4(uColor, 1.0);
         c = vec4(c.xyz + getDiffuse(), c.w);
         //c = vec4(c.xyz + getPosColors(), c.w);
-        //gl_FragColor = vec4( pow(c.xyz,vec3(0.454545)), c.w );
-        gl_FragColor = vec4( vObjectPos.xyz , 1.0 );
+        gl_FragColor = vec4( pow(c.xyz,vec3(0.454545)), c.w );
     }
 `
