@@ -21,8 +21,9 @@ const leavesMat = new THREE.ShaderMaterial({
   uniforms: {
     ...THREE.UniformsLib.lights,
     uTime: {value: 0.},
+    uRaycast: {value: 0.},
     uColorA: {value: new THREE.Color(0x933212)},
-    uColorB: {value: new THREE.Color(0xc7381a)},
+    uColorB: {value: new THREE.Color(0xc45841)},
     uColorC: {value: new THREE.Color(0xf5c465)},
     uBoxMin: {value: new THREE.Vector3(0,0,0)},
     uBoxSize: {value: new THREE.Vector3(10,10,10)},
@@ -32,7 +33,7 @@ const leavesMat = new THREE.ShaderMaterial({
   fragmentShader: leavesFS,
 })
 // GLTF LOADING 
-loader.loadAsync("assets/tree_flat___backup.glb")
+loader.loadAsync("assets/tree.glb")
 .catch(err => console.error(err))
 .then(obj => {
   tree.pole = obj.scene.getObjectByName("Pole");
@@ -46,9 +47,8 @@ loader.loadAsync("assets/tree_flat___backup.glb")
   leavesMat.uniforms.uBoxSize.value.copy(tree.bbox.getSize(new THREE.Vector3())); 
   tree.leavesCount = tree.crown.geometry.attributes.position.count;
   tree.leafGeometry = obj.scene.getObjectByName("Leaf").geometry; 
-  console.log(tree.leavesCount);
   tree.leaves = new THREE.InstancedMesh(tree.leafGeometry, leavesMat, tree.leavesCount); 
-  console.log(tree.leaves); 
+  //tree.leaves = new THREE.InstancedMesh(tree.leafGeometry, new THREE.MeshPhongMaterial({color: 0xc45841}), tree.leavesCount); 
   const dummy = new THREE.Object3D();
   for (let i = 0; i < tree.leavesCount; i++) { 
     dummy.position.x = tree.crown.geometry.attributes.position.array[i*3];

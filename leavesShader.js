@@ -1,29 +1,26 @@
 export const leavesVS = /*glsl*/`
-    uniform vec3 uBoxMin;
-    uniform vec3 uBoxSize;
-    uniform float uTime;
     uniform sampler2D uNoiseMap;
-    varying vec3 vWorldPos; 
-    varying vec3 vObjectPos; 
-    varying vec3 vNormal; 
-    varying vec3 vWorldNormal; 
-    varying vec3 vViewPosition;
+    uniform vec3 uBoxMin, uBoxSize, uRaycast;
+    uniform float uTime;
+    varying vec3 vObjectPos, vNormal, vWorldNormal; 
     
     vec4 getTriplanar(sampler2D tex){
         vec4 xPixel = texture(tex, (vObjectPos.xy + uTime) / 4.);
         vec4 yPixel = texture(tex, (vObjectPos.yz + uTime) / 4.);
-        vec4 zPixel = texture(tex, (vObjectPos.xz + uTime) / 4.);
+        vec4 zPixel = texture(tex, (vObjectPos.zx + uTime) / 4.);
         vec4 combined = (xPixel + yPixel + zPixel) / 6.0;
         combined.xyz = combined.xyz * vObjectPos; 
         return combined;
     }
     
     void main(){
+        mat4 mouseDisplace = mat4(1.);
+        mouseDisplace[3].xyz = uRaycast; 
+
         vNormal = normalMatrix * mat3(instanceMatrix) * normalize(normal); 
         vWorldNormal = vec3(modelMatrix * instanceMatrix * vec4(normal, 0.));
-        vWorldPos = vec3(modelMatrix * instanceMatrix * vec4(position, 1.));
+        vec3 vWorldPos = vec3(modelMatrix * instanceMatrix * vec4(position, 1.));
         vObjectPos = ((vWorldPos - uBoxMin) * 2.) / uBoxSize - vec3(1.0); 
-        vViewPosition = -normalize((modelViewMatrix * vec4(position, 1.)).xyz);
         vec4 noiseOffset = getTriplanar(uNoiseMap); 
         vec4 newPos = instanceMatrix * vec4(position, 1.); 
         newPos.xyz = newPos.xyz + noiseOffset.xyz;
@@ -33,15 +30,9 @@ export const leavesVS = /*glsl*/`
 export const leavesFS = /*glsl*/`
     #include <common> 
     #include <lights_pars_begin>
-    varying vec3 vObjectPos; 
-    varying vec3 vWorldPos;
-    varying vec3 vNormal; 
-    varying vec3 vViewPosition;
-    varying vec3 vWorldNormal; 
-    uniform vec3 uColorA;
-    uniform vec3 uColorB;
-    uniform vec3 uColorC;
+    uniform vec3 uColorA, uColorB, uColorC;
     uniform float uTime;
+    varying vec3 vObjectPos, vNormal, vWorldNormal; 
     
     vec3 mix3 (vec3 v1, vec3 v2, vec3 v3, float fa){
         vec3 tmp = mix(v2, v1, fa);
@@ -54,15 +45,6 @@ export const leavesFS = /*glsl*/`
         p = p * (-(vWorldNormal.g / 2.) + 0.5) * (- vObjectPos.y / 9. + 0.5); 
         return p;
     }
-
-    float getFakeSSS(){
-        float sss = 0.;
-        for (int i = 0; i < directionalLights.length(); i++){
-            vec3 l = (directionalLights[i].direction + normalize(-vViewPosition)); 
-            sss = pow(dot(vNormal, l), 2.) / 6.;
-        }
-        return sss; 
-    }
     float getDiffuse(){
         float intensity;
         for (int i = 0; i < directionalLights.length(); i++){
@@ -74,8 +56,8 @@ export const leavesFS = /*glsl*/`
     }
 
     void main(){
-        float gradMap = clamp(1., 0., getPosColors() + getFakeSSS() + getDiffuse());
+        float gradMap = getPosColors() + getDiffuse();
         vec4 c = vec4(mix3(uColorA, uColorB, uColorC, gradMap), 1.0);
-        gl_FragColor = vec4( pow(c.xyz,vec3(0.454545)), c.w );
+        gl_FragColor = vec4(pow(c.xyz,vec3(0.454545)), c.w);
     }
 `
