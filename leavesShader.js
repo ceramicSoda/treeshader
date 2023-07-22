@@ -15,9 +15,8 @@ export const leavesVS = /*glsl*/`
     
     void main(){
         mat4 mouseDisplace = mat4(1.);
-        mouseDisplace[3].y = pow(clamp(1.0 - distance(uRaycast, instanceMatrix[3].xyz), 0., 999.), 0.2) / 1.; 
-        //if ((1.0 - distance(uRaycast, instanceMatrix[3].xyz)) > 0.) 
-        //    mouseDisplace[3].y = 0.4;
+        float offset = pow(clamp(0.8 - distance(uRaycast, instanceMatrix[3].xyz), 0., 999.), 0.8  ) / 2.0; 
+        mouseDisplace[3].xyz = vec3(offset);
         vNormal = normalMatrix * mat3(instanceMatrix) * mat3(mouseDisplace) * normalize(normal); 
         vWorldNormal = vec3(modelMatrix * instanceMatrix * mouseDisplace * vec4(normal, 0.));
         vec3 vWorldPos = vec3(modelMatrix * instanceMatrix * mouseDisplace * vec4(position, 1.));
@@ -50,8 +49,8 @@ export const leavesFS = /*glsl*/`
         float intensity;
         for (int i = 0; i < directionalLights.length(); i++){
             intensity = dot(directionalLights[i].direction, vNormal);
-            intensity = smoothstep(0.65, 1., intensity) * 0.2 
-                        + pow(smoothstep(0.65, 1., intensity), 0.5);
+            intensity = smoothstep(0.55, 1., intensity) * 0.2 
+                        + pow(smoothstep(0.55, 1., intensity), 0.5);
         }
         return intensity;
     }

@@ -5,7 +5,6 @@ import { leavesVS, leavesFS } from "./leavesShader.js"
 import './style.css';
 // GENERAL DEFINITIONS
 const scene = new THREE.Scene();
-const sun = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshBasicMaterial({color: 0xffffef}));
 const loader = new GLTFLoader();
 const camera = new THREE.PerspectiveCamera(30, window.innerWidth/window.innerHeight, 0.001, 1000);
 const renderer = new THREE.WebGLRenderer({alpha: true});
@@ -15,6 +14,9 @@ const raycaster = new THREE.Raycaster();
 const dlight01 = new THREE.DirectionalLight(0xcccccc, 1.8);
 const tree = {group: new THREE.Group()};
 const noiseMap = new THREE.TextureLoader().load('assets/noise.png');
+//const rayPlane = new THREE.Mesh(new THREE.PlaneGeometry(100,100,1,1), new THREE.MeshStandardMaterial({side: THREE.DoubleSide}));
+const rayPlane = new THREE.Mesh(new THREE.PlaneGeometry(100,100,1,1), undefined);
+rayPlane.visible = false;
 // MATERIALS
 const leavesMat = new THREE.ShaderMaterial({
   lights: true,
@@ -35,11 +37,11 @@ const leavesMat = new THREE.ShaderMaterial({
 })
 // GLTF LOADING 
 //loader.loadAsync("assets/tree.glb")
-loader.loadAsync("assets/__old/tree_new.glb")
+loader.loadAsync("assets/__old/tree_high.glb")
 .catch(err => console.error(err))
 .then(obj => {
   tree.pole = obj.scene.getObjectByName("Pole");
-  tree.pole.material = new THREE.MeshBasicMaterial({map: tree.pole.material.map});
+  tree.pole.material = new THREE.MeshToonMaterial({map: tree.pole.material.map});
   // Each vertex of crown mesh will be a leaf
   // Crown mesh won't be visible in scene
   tree.crown = obj.scene.getObjectByName("Leaves");
@@ -51,7 +53,6 @@ loader.loadAsync("assets/__old/tree_new.glb")
   tree.leavesCount = tree.crown.geometry.attributes.position.count;
   tree.leafGeometry = obj.scene.getObjectByName("Leaf").geometry; 
   tree.leaves = new THREE.InstancedMesh(tree.leafGeometry, leavesMat, tree.leavesCount); 
-  //tree.leaves = new THREE.InstancedMesh(tree.leafGeometry, new THREE.MeshPhongMaterial({color: 0xc45841}), tree.leavesCount); 
   const dummy = new THREE.Object3D();
   for (let i = 0; i < tree.leavesCount; i++) { 
     dummy.position.x = tree.crown.geometry.attributes.position.array[i*3];
@@ -60,9 +61,9 @@ loader.loadAsync("assets/__old/tree_new.glb")
     dummy.lookAt(dummy.position.x + tree.crown.geometry.attributes.normal.array[i*3],
                  dummy.position.y + tree.crown.geometry.attributes.normal.array[i*3+1],
                  dummy.position.z + tree.crown.geometry.attributes.normal.array[i*3+2]);
-    dummy.scale.x = (Math.random() * 0.4 + 0.8);
-    dummy.scale.y = (Math.random() * 0.4 + 0.8);
-    dummy.scale.z = (Math.random() * 0.4 + 0.8);
+    dummy.scale.x = (Math.random() * 0.2 + 0.8);
+    dummy.scale.y = (Math.random() * 0.2 + 0.8);
+    dummy.scale.z = (Math.random() * 0.2 + 0.8);
     dummy.updateMatrix();
     tree.leaves.setMatrixAt(i, dummy.matrix);
   }
@@ -79,9 +80,7 @@ controls.target = new THREE.Vector3(0,2.4,0);
 controls.maxPolarAngle = Math.PI * 0.6; 
 controls.enableDamping = true;
 controls.enablePan = false;
-controls.autoRotate = true;
-sun.position.copy(dlight01.position);
-scene.add(dlight01, tree.group, sun);
+scene.add(dlight01, tree.group, rayPlane);
 noiseMap.wrapS = THREE.RepeatWrapping;
 noiseMap.wrapT = THREE.RepeatWrapping;
 // MAIN LOOP
@@ -97,12 +96,17 @@ window.addEventListener("resize", () => {
   renderer.setSize( window.innerWidth, window.innerHeight );
 })
 document.addEventListener("mousemove", (e) => {
-  pointer.set((e.clientX / window.innerWidth) * 1.5 - 0.75,
-              -(e.clientY / window.innerHeight) * 1.5 + 0.75);
+  pointer.set((e.clientX / window.innerWidth) * 2 - 1,
+              -(e.clientY / window.innerHeight) * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
   const intersects = raycaster.intersectObjects(scene.children);
-  if (intersects[0])
-    leavesMat.uniforms.uRaycast.value = intersects[0].point
+  if (intersects[0]){
+    rayPlane.position.copy(intersects[0].point);
+    rayPlane.position.multiplyScalar(0.9);
+    rayPlane.lookAt(camera.position);
+    //console.log(intersects[0]);
+    leavesMat.uniforms.uRaycast.value = intersects[0].point;
+  }
   else
-  leavesMat.uniforms.uRaycast.value = new THREE.Vector3(0,0,0);
+  leavesMat.uniforms.uRaycast.value = new THREE.Vector3(99,99,99);
 })
