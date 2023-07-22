@@ -9,12 +9,13 @@ const loader = new GLTFLoader();
 const camera = new THREE.PerspectiveCamera(30, window.innerWidth/window.innerHeight, 0.001, 1000);
 const renderer = new THREE.WebGLRenderer({alpha: true});
 const controls = new OrbitControls(camera, renderer.domElement);
+const dummy = new THREE.Object3D();
+const matrix = new THREE.Matrix4();
 const pointer = new THREE.Vector2(); 
 const raycaster = new THREE.Raycaster();
 const dlight01 = new THREE.DirectionalLight(0xcccccc, 1.8);
 const tree = {group: new THREE.Group()};
 const noiseMap = new THREE.TextureLoader().load('assets/noise.png');
-//const rayPlane = new THREE.Mesh(new THREE.PlaneGeometry(100,100,1,1), new THREE.MeshStandardMaterial({side: THREE.DoubleSide}));
 const rayPlane = new THREE.Mesh(new THREE.PlaneGeometry(100,100,1,1), undefined);
 rayPlane.visible = false;
 // MATERIALS
@@ -36,7 +37,6 @@ const leavesMat = new THREE.ShaderMaterial({
   fragmentShader: leavesFS,
 })
 // GLTF LOADING 
-//loader.loadAsync("assets/tree.glb")
 loader.loadAsync("assets/__old/tree_high.glb")
 .catch(err => console.error(err))
 .then(obj => {
@@ -45,15 +45,15 @@ loader.loadAsync("assets/__old/tree_high.glb")
   // Each vertex of crown mesh will be a leaf
   // Crown mesh won't be visible in scene
   tree.crown = obj.scene.getObjectByName("Leaves");
-  tree.crown.visible = false;
   // For object space shader
   tree.bbox = new THREE.Box3().setFromObject(tree.crown);
   leavesMat.uniforms.uBoxMin.value.copy(tree.bbox.min); 
   leavesMat.uniforms.uBoxSize.value.copy(tree.bbox.getSize(new THREE.Vector3())); 
   tree.leavesCount = tree.crown.geometry.attributes.position.count;
+  tree.whenDied = new Array(tree.leavesCount);
+  tree.deadID = []; 
   tree.leafGeometry = obj.scene.getObjectByName("Leaf").geometry; 
   tree.leaves = new THREE.InstancedMesh(tree.leafGeometry, leavesMat, tree.leavesCount); 
-  const dummy = new THREE.Object3D();
   for (let i = 0; i < tree.leavesCount; i++) { 
     dummy.position.x = tree.crown.geometry.attributes.position.array[i*3];
     dummy.position.y = tree.crown.geometry.attributes.position.array[i*3+1];
@@ -67,17 +67,17 @@ loader.loadAsync("assets/__old/tree_high.glb")
     dummy.updateMatrix();
     tree.leaves.setMatrixAt(i, dummy.matrix);
   }
-  tree.group.add(tree.pole, tree.leaves, tree.crown);
+  tree.group.add(tree.pole, tree.leaves);
 })
 // INIT
 document.body.appendChild(renderer.domElement); 
 renderer.setAnimationLoop(animate);
 renderer.setSize(window.innerWidth, window.innerHeight);
-dlight01.position.set(3,8,-3);
+dlight01.position.set(3,6,-3);
 dlight01.lookAt(0,2.4,0);
 camera.position.set(-6,1,-10);
 controls.target = new THREE.Vector3(0,2.4,0);
-controls.maxPolarAngle = Math.PI * 0.6; 
+controls.maxPolarAngle = Math.PI * 0.5; 
 controls.enableDamping = true;
 controls.enablePan = false;
 scene.add(dlight01, tree.group, rayPlane);
@@ -87,7 +87,24 @@ noiseMap.wrapT = THREE.RepeatWrapping;
 function animate () {
   leavesMat.uniforms.uTime.value += 0.01; 
   controls.update(); 
+
   renderer.render(scene, camera); 
+  if (tree.deadID){
+    tree.deadID = tree.deadID.map(i => {
+      tree.leaves.getMatrixAt(i, matrix);
+      matrix.decompose(dummy.position, dummy.rotation, dummy.scale);
+      if (dummy.position.y > 0) {
+        dummy.position.y -= 0.04;
+        dummy.position.x += Math.random()/10 - 0.05;
+        dummy.position.z += Math.random()/10 - 0.05;
+        dummy.rotation.x += 0.2;
+        dummy.updateMatrix();
+        tree.leaves.setMatrixAt(i, dummy.matrix);
+        return(i);
+      }
+    })
+    tree.leaves.instanceMatrix.needsUpdate = true; 
+  } 
 }
 // EVENTS
 window.addEventListener("resize", () => {
@@ -99,13 +116,16 @@ document.addEventListener("mousemove", (e) => {
   pointer.set((e.clientX / window.innerWidth) * 2 - 1,
               -(e.clientY / window.innerHeight) * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
-  const intersects = raycaster.intersectObjects(scene.children);
+  //const intersects = raycaster.intersectObjects(scene.children);
+  const intersects = raycaster.intersectObjects([tree.leaves, rayPlane]);
   if (intersects[0]){
+    // for smooth transition between background and tree
     rayPlane.position.copy(intersects[0].point);
     rayPlane.position.multiplyScalar(0.9);
     rayPlane.lookAt(camera.position);
-    //console.log(intersects[0]);
     leavesMat.uniforms.uRaycast.value = intersects[0].point;
+    if (Math.random()*5 > 4)
+      tree.deadID.push(intersects[0].instanceId);
   }
   else
   leavesMat.uniforms.uRaycast.value = new THREE.Vector3(99,99,99);

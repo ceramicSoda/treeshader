@@ -3,6 +3,7 @@ export const leavesVS = /*glsl*/`
     uniform vec3 uBoxMin, uBoxSize, uRaycast;
     uniform float uTime;
     varying vec3 vObjectPos, vNormal, vWorldNormal; 
+    varying float vCloseToGround;
     
     vec4 getTriplanar(sampler2D tex){
         vec4 xPixel = texture(tex, (vObjectPos.xy + uTime) / 4.);
@@ -15,13 +16,15 @@ export const leavesVS = /*glsl*/`
     
     void main(){
         mat4 mouseDisplace = mat4(1.);
-        float offset = pow(clamp(0.8 - distance(uRaycast, instanceMatrix[3].xyz), 0., 999.), 0.8  ) / 2.0; 
+        vec3 vWorldPos = vec3(modelMatrix * instanceMatrix * mouseDisplace * vec4(position, 1.));
+        vCloseToGround = clamp(vWorldPos.y, 0., 1.);
+        float offset = clamp(0.8 - distance(uRaycast, instanceMatrix[3].xyz), 0., 999.); 
+        offset = (pow(offset, 0.8) / 2.0) * vCloseToGround;
         mouseDisplace[3].xyz = vec3(offset);
         vNormal = normalMatrix * mat3(instanceMatrix) * mat3(mouseDisplace) * normalize(normal); 
         vWorldNormal = vec3(modelMatrix * instanceMatrix * mouseDisplace * vec4(normal, 0.));
-        vec3 vWorldPos = vec3(modelMatrix * instanceMatrix * mouseDisplace * vec4(position, 1.));
         vObjectPos = ((vWorldPos - uBoxMin) * 2.) / uBoxSize - vec3(1.0); 
-        vec4 noiseOffset = getTriplanar(uNoiseMap); 
+        vec4 noiseOffset = getTriplanar(uNoiseMap) * vCloseToGround; 
         vec4 newPos = instanceMatrix * mouseDisplace * vec4(position, 1.); 
         newPos.xyz = newPos.xyz + noiseOffset.xyz;
         gl_Position =  projectionMatrix * modelViewMatrix * newPos;
@@ -33,6 +36,7 @@ export const leavesFS = /*glsl*/`
     uniform vec3 uColorA, uColorB, uColorC;
     uniform float uTime;
     varying vec3 vObjectPos, vNormal, vWorldNormal; 
+    varying float vCloseToGround;
     
     vec3 mix3 (vec3 v1, vec3 v2, vec3 v3, float fa){
         vec3 tmp = mix(v2, v1, fa);
@@ -56,7 +60,7 @@ export const leavesFS = /*glsl*/`
     }
 
     void main(){
-        float gradMap = getPosColors() + getDiffuse();
+        float gradMap = (getPosColors() + getDiffuse()) * vCloseToGround ;
         vec4 c = vec4(mix3(uColorA, uColorB, uColorC, gradMap), 1.0);
         gl_FragColor = vec4(pow(c.xyz,vec3(0.454545)), c.w);
     }
