@@ -131,11 +131,9 @@ document.addEventListener("mousemove", (e) => {
   leavesMat.uniforms.uRaycast.value = new THREE.Vector3(99,99,99);
 })
 // MISC
-killRandom();
 function killRandom() {
-  if (tree.deadID){
+  if (tree.deadID)
     tree.deadID.push(Math.floor(Math.random() * tree.leavesCount)); 
-    console.log("dead!");
-  }
   setTimeout(killRandom, Math.random() * 2000);
 }
+killRandom();
