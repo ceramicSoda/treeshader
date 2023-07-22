@@ -34,7 +34,8 @@ const leavesMat = new THREE.ShaderMaterial({
   fragmentShader: leavesFS,
 })
 // GLTF LOADING 
-loader.loadAsync("assets/tree.glb")
+//loader.loadAsync("assets/tree.glb")
+loader.loadAsync("assets/__old/tree_new.glb")
 .catch(err => console.error(err))
 .then(obj => {
   tree.pole = obj.scene.getObjectByName("Pole");
@@ -96,10 +97,12 @@ window.addEventListener("resize", () => {
   renderer.setSize( window.innerWidth, window.innerHeight );
 })
 document.addEventListener("mousemove", (e) => {
-  pointer.set((e.clientX / window.innerWidth) * 2 - 1,
-              -(e.clientY / window.innerHeight) * 2 + 1);
+  pointer.set((e.clientX / window.innerWidth) * 1.5 - 0.75,
+              -(e.clientY / window.innerHeight) * 1.5 + 0.75);
   raycaster.setFromCamera(pointer, camera);
   const intersects = raycaster.intersectObjects(scene.children);
   if (intersects[0])
-    leavesMat.uniforms.uRaycast.value = intersects[0].point;
+    leavesMat.uniforms.uRaycast.value = intersects[0].point
+  else
+  leavesMat.uniforms.uRaycast.value = new THREE.Vector3(0,0,0);
 })

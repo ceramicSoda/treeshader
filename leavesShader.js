@@ -15,9 +15,9 @@ export const leavesVS = /*glsl*/`
     
     void main(){
         mat4 mouseDisplace = mat4(1.);
-        //mouseDisplace[3].y = distance(uRaycast, vObjectPos); 
-        mouseDisplace[3].y = uTime * 5.; 
-
+        mouseDisplace[3].y = pow(clamp(1.0 - distance(uRaycast, instanceMatrix[3].xyz), 0., 999.), 0.2) / 1.; 
+        //if ((1.0 - distance(uRaycast, instanceMatrix[3].xyz)) > 0.) 
+        //    mouseDisplace[3].y = 0.4;
         vNormal = normalMatrix * mat3(instanceMatrix) * mat3(mouseDisplace) * normalize(normal); 
         vWorldNormal = vec3(modelMatrix * instanceMatrix * mouseDisplace * vec4(normal, 0.));
         vec3 vWorldPos = vec3(modelMatrix * instanceMatrix * mouseDisplace * vec4(position, 1.));
