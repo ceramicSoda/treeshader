@@ -17,6 +17,7 @@ const dlight01 = new THREE.DirectionalLight(0xcccccc, 1.8);
 const tree = {group: new THREE.Group()};
 const noiseMap = new THREE.TextureLoader().load('assets/noise.png');
 const rayPlane = new THREE.Mesh(new THREE.PlaneGeometry(100,100,1,1), undefined);
+console.log(treeGLTF);
 // MATERIALS
 const leavesMat = new THREE.ShaderMaterial({
   lights: true,
@@ -24,11 +25,8 @@ const leavesMat = new THREE.ShaderMaterial({
   uniforms: {
     ...THREE.UniformsLib.lights,
     uTime: {value: 0.},
-    //uColorA: {value: new THREE.Color(0x933212)},
     uColorA: {value: new THREE.Color(0xb45252)},
-    //uColorB: {value: new THREE.Color(0xc45841)},
     uColorB: {value: new THREE.Color(0xd3a068)},
-    //uColorC: {value: new THREE.Color(0xf5c465)},
     uColorC: {value: new THREE.Color(0xede19e)},
     uBoxMin: {value: new THREE.Vector3(0,0,0)},
     uBoxSize: {value: new THREE.Vector3(10,10,10)},
@@ -39,9 +37,7 @@ const leavesMat = new THREE.ShaderMaterial({
   fragmentShader: leavesFS,
 })
 // GLTF LOADING 
-loader.loadAsync("assets/__old/tree_high.glb")
-.catch(err => console.error(err))
-.then(obj => {
+loader.parse(treeGLTF, "", function treeLoad(obj){
   tree.pole = obj.scene.getObjectByName("Pole");
   tree.pole.material = new THREE.MeshToonMaterial({map: tree.pole.material.map});
   // Each vertex of crown mesh will be a leaf
