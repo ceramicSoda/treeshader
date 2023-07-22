@@ -5,12 +5,13 @@ import { leavesVS, leavesFS } from "./leavesShader.js"
 import './style.css';
 // GENERAL DEFINITIONS
 const scene = new THREE.Scene();
-// Sun :P
-const test = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshBasicMaterial({color: 0xffffef}));
+const sun = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshBasicMaterial({color: 0xffffef}));
 const loader = new GLTFLoader();
 const camera = new THREE.PerspectiveCamera(30, window.innerWidth/window.innerHeight, 0.001, 1000);
 const renderer = new THREE.WebGLRenderer({alpha: true});
 const controls = new OrbitControls(camera, renderer.domElement);
+const pointer = new THREE.Vector2(); 
+const raycaster = new THREE.Raycaster();
 const dlight01 = new THREE.DirectionalLight(0xcccccc, 1.8);
 const tree = {group: new THREE.Group()};
 const noiseMap = new THREE.TextureLoader().load('assets/noise.png');
@@ -21,12 +22,12 @@ const leavesMat = new THREE.ShaderMaterial({
   uniforms: {
     ...THREE.UniformsLib.lights,
     uTime: {value: 0.},
-    uRaycast: {value: 0.},
     uColorA: {value: new THREE.Color(0x933212)},
     uColorB: {value: new THREE.Color(0xc45841)},
     uColorC: {value: new THREE.Color(0xf5c465)},
     uBoxMin: {value: new THREE.Vector3(0,0,0)},
     uBoxSize: {value: new THREE.Vector3(10,10,10)},
+    uRaycast: {value: new THREE.Vector3(0,0,0)},
     uNoiseMap: {value: noiseMap},
   },
   vertexShader: leavesVS,
@@ -41,6 +42,7 @@ loader.loadAsync("assets/tree.glb")
   // Each vertex of crown mesh will be a leaf
   // Crown mesh won't be visible in scene
   tree.crown = obj.scene.getObjectByName("Leaves");
+  tree.crown.visible = false;
   // For object space shader
   tree.bbox = new THREE.Box3().setFromObject(tree.crown);
   leavesMat.uniforms.uBoxMin.value.copy(tree.bbox.min); 
@@ -63,7 +65,7 @@ loader.loadAsync("assets/tree.glb")
     dummy.updateMatrix();
     tree.leaves.setMatrixAt(i, dummy.matrix);
   }
-  tree.group.add(tree.pole, tree.leaves);
+  tree.group.add(tree.pole, tree.leaves, tree.crown);
 })
 // INIT
 document.body.appendChild(renderer.domElement); 
@@ -77,8 +79,8 @@ controls.maxPolarAngle = Math.PI * 0.6;
 controls.enableDamping = true;
 controls.enablePan = false;
 controls.autoRotate = true;
-test.position.copy(dlight01.position);
-scene.add(dlight01, tree.group, test);
+sun.position.copy(dlight01.position);
+scene.add(dlight01, tree.group, sun);
 noiseMap.wrapS = THREE.RepeatWrapping;
 noiseMap.wrapT = THREE.RepeatWrapping;
 // MAIN LOOP
@@ -92,4 +94,12 @@ window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize( window.innerWidth, window.innerHeight );
+})
+document.addEventListener("mousemove", (e) => {
+  pointer.set((e.clientX / window.innerWidth) * 2 - 1,
+              -(e.clientY / window.innerHeight) * 2 + 1);
+  raycaster.setFromCamera(pointer, camera);
+  const intersects = raycaster.intersectObjects(scene.children);
+  if (intersects[0])
+    leavesMat.uniforms.uRaycast.value = intersects[0].point;
 })

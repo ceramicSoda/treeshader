@@ -15,14 +15,15 @@ export const leavesVS = /*glsl*/`
     
     void main(){
         mat4 mouseDisplace = mat4(1.);
-        mouseDisplace[3].xyz = uRaycast; 
+        //mouseDisplace[3].y = distance(uRaycast, vObjectPos); 
+        mouseDisplace[3].y = uTime * 5.; 
 
-        vNormal = normalMatrix * mat3(instanceMatrix) * normalize(normal); 
-        vWorldNormal = vec3(modelMatrix * instanceMatrix * vec4(normal, 0.));
-        vec3 vWorldPos = vec3(modelMatrix * instanceMatrix * vec4(position, 1.));
+        vNormal = normalMatrix * mat3(instanceMatrix) * mat3(mouseDisplace) * normalize(normal); 
+        vWorldNormal = vec3(modelMatrix * instanceMatrix * mouseDisplace * vec4(normal, 0.));
+        vec3 vWorldPos = vec3(modelMatrix * instanceMatrix * mouseDisplace * vec4(position, 1.));
         vObjectPos = ((vWorldPos - uBoxMin) * 2.) / uBoxSize - vec3(1.0); 
         vec4 noiseOffset = getTriplanar(uNoiseMap); 
-        vec4 newPos = instanceMatrix * vec4(position, 1.); 
+        vec4 newPos = instanceMatrix * mouseDisplace * vec4(position, 1.); 
         newPos.xyz = newPos.xyz + noiseOffset.xyz;
         gl_Position =  projectionMatrix * modelViewMatrix * newPos;
     }
