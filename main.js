@@ -6,7 +6,7 @@ import './style.css';
 // GENERAL DEFINITIONS
 const scene = new THREE.Scene();
 const loader = new GLTFLoader();
-const camera = new THREE.PerspectiveCamera(30, window.innerWidth/window.innerHeight, 0.001, 1000);
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth/window.innerHeight, 0.001, 1000);
 const renderer = new THREE.WebGLRenderer({alpha: true});
 const controls = new OrbitControls(camera, renderer.domElement);
 const dummy = new THREE.Object3D();
@@ -17,7 +17,6 @@ const dlight01 = new THREE.DirectionalLight(0xcccccc, 1.8);
 const tree = {group: new THREE.Group()};
 const noiseMap = new THREE.TextureLoader().load('assets/noise.png');
 const rayPlane = new THREE.Mesh(new THREE.PlaneGeometry(100,100,1,1), undefined);
-rayPlane.visible = false;
 // MATERIALS
 const leavesMat = new THREE.ShaderMaterial({
   lights: true,
@@ -25,9 +24,12 @@ const leavesMat = new THREE.ShaderMaterial({
   uniforms: {
     ...THREE.UniformsLib.lights,
     uTime: {value: 0.},
-    uColorA: {value: new THREE.Color(0x933212)},
-    uColorB: {value: new THREE.Color(0xc45841)},
-    uColorC: {value: new THREE.Color(0xf5c465)},
+    //uColorA: {value: new THREE.Color(0x933212)},
+    uColorA: {value: new THREE.Color(0xb45252)},
+    //uColorB: {value: new THREE.Color(0xc45841)},
+    uColorB: {value: new THREE.Color(0xd3a068)},
+    //uColorC: {value: new THREE.Color(0xf5c465)},
+    uColorC: {value: new THREE.Color(0xede19e)},
     uBoxMin: {value: new THREE.Vector3(0,0,0)},
     uBoxSize: {value: new THREE.Vector3(10,10,10)},
     uRaycast: {value: new THREE.Vector3(0,0,0)},
@@ -68,6 +70,8 @@ loader.loadAsync("assets/__old/tree_high.glb")
     tree.leaves.setMatrixAt(i, dummy.matrix);
   }
   tree.group.add(tree.pole, tree.leaves);
+  for (let i = 0; i < 16; i++)
+    tree.deadID.push(Math.floor(Math.random() * tree.leavesCount)); 
 })
 // INIT
 document.body.appendChild(renderer.domElement); 
@@ -75,11 +79,14 @@ renderer.setAnimationLoop(animate);
 renderer.setSize(window.innerWidth, window.innerHeight);
 dlight01.position.set(3,6,-3);
 dlight01.lookAt(0,2.4,0);
-camera.position.set(-6,1,-10);
+rayPlane.visible = false;
+camera.position.set(-7,1,-12);
 controls.target = new THREE.Vector3(0,2.4,0);
 controls.maxPolarAngle = Math.PI * 0.5; 
 controls.enableDamping = true;
+controls.autoRotate = true;
 controls.enablePan = false;
+controls.touches = {TWO: THREE.TOUCH.ROTATE,};
 scene.add(dlight01, tree.group, rayPlane);
 noiseMap.wrapS = THREE.RepeatWrapping;
 noiseMap.wrapT = THREE.RepeatWrapping;
@@ -93,8 +100,8 @@ function animate () {
       matrix.decompose(dummy.position, dummy.rotation, dummy.scale);
       if (dummy.position.y > 0) {
         dummy.position.y -= 0.04;
-        dummy.position.x += Math.random()/10 - 0.05;
-        dummy.position.z += Math.random()/10 - 0.05;
+        dummy.position.x += Math.random()/5 - 0.11;
+        dummy.position.z += Math.random()/5 - 0.11;
         dummy.rotation.x += 0.2;
         dummy.updateMatrix();
         tree.leaves.setMatrixAt(i, dummy.matrix);
@@ -109,12 +116,21 @@ function animate () {
 }
 // EVENTS
 window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.aspect = document.body.clientWidth / document.body.clientHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setSize( document.body.clientWidth, document.body.clientHeight );
 })
-document.addEventListener("mousemove", (e) => {
-  pointer.set((e.clientX / window.innerWidth) * 2 - 1,
+document.addEventListener("mousemove", (e) => pointerMove(e))
+document.addEventListener("touchmove", (e) => pointerMove(e))
+// MISC
+killRandom();
+function killRandom() {
+  if (tree.deadID)
+    tree.deadID.push(Math.floor(Math.random() * tree.leavesCount)); 
+  setTimeout(killRandom, Math.random() * 1500);
+}
+function pointerMove(e) {
+    pointer.set((e.clientX / window.innerWidth) * 2 - 1,
               -(e.clientY / window.innerHeight) * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
   const intersects = raycaster.intersectObjects([tree.leaves, rayPlane]);
@@ -124,16 +140,9 @@ document.addEventListener("mousemove", (e) => {
     rayPlane.position.multiplyScalar(0.9);
     rayPlane.lookAt(camera.position);
     leavesMat.uniforms.uRaycast.value = intersects[0].point;
-    if (Math.random()*5 > 4)
+    if (Math.random()*5 > 3)
       tree.deadID.push(intersects[0].instanceId);
   }
   else
-  leavesMat.uniforms.uRaycast.value = new THREE.Vector3(99,99,99);
-})
-// MISC
-function killRandom() {
-  if (tree.deadID)
-    tree.deadID.push(Math.floor(Math.random() * tree.leavesCount)); 
-  setTimeout(killRandom, Math.random() * 2000);
+    leavesMat.uniforms.uRaycast.value = new THREE.Vector3(99,99,99);
 }
-killRandom();
