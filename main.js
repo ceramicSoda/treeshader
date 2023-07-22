@@ -86,9 +86,7 @@ noiseMap.wrapT = THREE.RepeatWrapping;
 // MAIN LOOP
 function animate () {
   leavesMat.uniforms.uTime.value += 0.01; 
-  controls.update(); 
 
-  renderer.render(scene, camera); 
   if (tree.deadID){
     tree.deadID = tree.deadID.map(i => {
       tree.leaves.getMatrixAt(i, matrix);
@@ -105,6 +103,9 @@ function animate () {
     })
     tree.leaves.instanceMatrix.needsUpdate = true; 
   } 
+
+  controls.update(); 
+  renderer.render(scene, camera); 
 }
 // EVENTS
 window.addEventListener("resize", () => {
@@ -116,7 +117,6 @@ document.addEventListener("mousemove", (e) => {
   pointer.set((e.clientX / window.innerWidth) * 2 - 1,
               -(e.clientY / window.innerHeight) * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
-  //const intersects = raycaster.intersectObjects(scene.children);
   const intersects = raycaster.intersectObjects([tree.leaves, rayPlane]);
   if (intersects[0]){
     // for smooth transition between background and tree
@@ -130,3 +130,12 @@ document.addEventListener("mousemove", (e) => {
   else
   leavesMat.uniforms.uRaycast.value = new THREE.Vector3(99,99,99);
 })
+// MISC
+killRandom();
+function killRandom() {
+  if (tree.deadID){
+    tree.deadID.push(Math.floor(Math.random() * tree.leavesCount)); 
+    console.log("dead!");
+  }
+  setTimeout(killRandom, Math.random() * 2000);
+}
